@@ -1,6 +1,5 @@
-#include <sstream>
-
 #include <gtest/gtest.h>
+#include <sstream>
 
 #include "severity.h"
 

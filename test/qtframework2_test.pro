@@ -1,11 +1,17 @@
 TEMPLATE     = app
-CONFIG      += c++11
+CONFIG      += c++14
 QT          -= gui
 LIBS        += -lgtest -lgtest_main
+DESTDIR      = $$PWD
 INCLUDEPATH += ..
 
-SOURCES     += ../severity.cpp \
-               test_enum_to_string.cpp
+SOURCES     += ../preferences.cpp \
+               ../severity.cpp \
+               test_enum_to_string.cpp \
+               test_preferences.cpp
 
 HEADERS     += ../enum_to_string.h \
+               ../iapplicationpreferences.h \
+               ../iloggerpreferences.h \
+               ../preferences.h \
                ../severity.h

@@ -1,3 +1,5 @@
 build-*
 *.pro.user
+qtframework2_test
+TestAppOut.ini
 
