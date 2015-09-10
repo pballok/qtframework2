@@ -5,7 +5,8 @@ LIBS        += -lgtest -lgtest_main
 DESTDIR      = $$PWD
 INCLUDEPATH += ..
 
-SOURCES     += ../preferences.cpp \
+SOURCES     += ../logger.cpp \
+               ../preferences.cpp \
                ../severity.cpp \
                test_enum_to_string.cpp \
                test_logger.cpp \

@@ -2,8 +2,8 @@
 
 #include "logger.h"
 
-TEST(Logger, AppName) {
-    std::unique_ptr<FileLogger> logger = std::make_unique<FileLogger>(std::make_unique<Logger>(), Severity::WARNING, "test.log");
+TEST(Logger, ConsoleLogger) {
+    the_logger = std::make_unique<ConsoleLogger>(std::make_unique<Logger>(), Severity::WARNING);
 
-//    logger->log(Severity::DEBUG) << "Test DEBUG message";
+    LOG(DEBUG) << "Test DEBUG message" << " Using only " << 1 << " ConsoleLogger";
 }
