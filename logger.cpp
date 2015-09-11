@@ -1,3 +1,7 @@
 #include "logger.h"
 
-std::unique_ptr<ILogger> the_logger = std::make_unique<Logger>(Severity::NONE);
+std::shared_ptr<ILogger> the_logger{nullptr};
+
+LogMessage::~LogMessage() {
+    logger_->writeMessage(severity_, stream_.str());
+}

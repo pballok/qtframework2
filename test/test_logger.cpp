@@ -3,7 +3,7 @@
 #include "logger.h"
 
 TEST(Logger, ConsoleLogger) {
-    the_logger = std::make_unique<ConsoleLogger>(std::make_unique<Logger>(), Severity::WARNING);
+    the_logger = std::make_shared<FileLogger>(std::make_unique<FileLogger>(std::make_unique<Logger>(), Severity::WARNING, "test1.log"), Severity::INFO, "test2.log");
 
-    LOG(DEBUG) << "Test DEBUG message" << " Using only " << 1 << " ConsoleLogger";
+    LOG(ERROR) << "Test DEBUG message" << " Using only " << 1 << " ConsoleLogger";
 }
