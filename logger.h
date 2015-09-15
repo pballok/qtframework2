@@ -5,6 +5,7 @@
 #include <sstream>
 #include <utility>
 #include <string>
+#include <fstream>
 
 #include "severity.h"
 
@@ -24,6 +25,8 @@ public:
         logger_   = other.logger_;
         severity_ = other.severity_;
         stream_   = std::move(other.stream_);
+
+        other.logger_ = nullptr;
     }
     ~LogMessage();
 
@@ -76,12 +79,21 @@ class FileLogger : public LoggerDecorator {
 public:
     FileLogger(std::unique_ptr<ILogger> b, Severity sev, const std::string& file_name)
         : LoggerDecorator(std::move(b), sev),
-          file_name_{file_name} { }
+          file_stream_{file_name, std::ofstream::out | std::ofstream::app} {
+            if(file_stream_.fail()) {
+                reporting_level_ = Severity::NONE;
+                max_reporting_level_ = base_->max_reporting_level();
+            }
 
-    void writeMessage(Severity, const std::string&) override { }
+        }
+
+    void writeMessage(Severity sev, const std::string& message) override {
+        base_->writeMessage(sev, message);
+        if(sev <= reporting_level_ && !file_stream_.fail()) file_stream_ << message << std::endl;
+    }
 
 protected:
-    std::string file_name_;
+    std::ofstream file_stream_;
 };
 
 
@@ -93,7 +105,7 @@ public:
 
     void writeMessage(Severity sev, const std::string& message) override {
         base_->writeMessage(sev, message);
-        if(sev <= reporting_level_) std::cerr << "message sev: " << sev << " logger level: " << reporting_level_ << " " << message << std::endl;
+        if(sev <= reporting_level_) std::cerr << message << std::endl;
     }
 };
 
