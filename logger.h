@@ -6,6 +6,8 @@
 #include <utility>
 #include <string>
 #include <fstream>
+#include <ctime>
+#include <iomanip>
 
 #include "severity.h"
 
@@ -19,7 +21,10 @@ class LogMessage final {
 public:
     LogMessage(Severity sev, ILogger* logger) :
         logger_{logger},
-        severity_{sev} { stream_ << EnumToString<Severity>::toString(sev) << " "; }
+        severity_{sev} {
+            std::time_t t  = std::time(nullptr);
+            std::tm*    tm = std::localtime(&t);
+            stream_ << std::put_time(tm, "%e-%b-%Y %H:%M:%S ") << EnumToString<Severity>::toString(sev) << " "; }
 
     LogMessage(LogMessage&& other) {
         logger_   = other.logger_;
