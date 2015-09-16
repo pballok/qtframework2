@@ -1,8 +1,8 @@
 #include "severity.h"
 
 template<>
-const std::map<Severity, std::string> EnumToString<Severity>::map_{{Severity::DEBUG,   "DEB"},
-                                                                   {Severity::WARNING, "WAR"},
-                                                                   {Severity::ERROR,   "ERR"},
+const std::map<Severity, std::string> EnumToString<Severity>::map_{{Severity::NONE,    "NON"},
                                                                    {Severity::INFO,    "INF"},
-                                                                   {Severity::NONE,    "NON"}};
+                                                                   {Severity::ERROR,   "ERR"},
+                                                                   {Severity::WARNING, "WAR"},
+                                                                   {Severity::DEBUG,   "DEB"}};

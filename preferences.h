@@ -6,9 +6,11 @@
 #include "iapplicationpreferences.h"
 #include "iloggerpreferences.h"
 
-constexpr unsigned int QTFRAMEWORK_VERSION_MAJOR = 2;
-constexpr unsigned int QTFRAMEWORK_VERSION_MINOR = 0;
-constexpr unsigned int QTFRAMEWORK_VERSION_PATCH = 1;
+namespace {
+    constexpr unsigned int QTFRAMEWORK_VERSION_MAJOR = 2;
+    constexpr unsigned int QTFRAMEWORK_VERSION_MINOR = 2;
+    constexpr unsigned int QTFRAMEWORK_VERSION_PATCH = 0;
+}
 
 class Preferences : public IApplicationPreferences,
                     public ILoggerPreferences {
