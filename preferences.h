@@ -8,7 +8,7 @@
 
 namespace {
     constexpr unsigned int QTFRAMEWORK_VERSION_MAJOR = 2;
-    constexpr unsigned int QTFRAMEWORK_VERSION_MINOR = 2;
+    constexpr unsigned int QTFRAMEWORK_VERSION_MINOR = 3;
     constexpr unsigned int QTFRAMEWORK_VERSION_PATCH = 0;
 }
 
