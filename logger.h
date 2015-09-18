@@ -19,19 +19,16 @@ class ILogger;
 
 class LogMessage final {
 public:
-    LogMessage(Severity sev, ILogger* logger) :
+    LogMessage(Severity sev, ILogger* const logger) :
         logger_{logger},
         severity_{sev} {
             std::time_t t  = std::time(nullptr);
             std::tm*    tm = std::localtime(&t);
             stream_ << std::put_time(tm, "%e-%b-%Y %H:%M:%S ") << EnumToString<Severity>::toString(sev) << " "; }
 
-    LogMessage(LogMessage&& other) {
-        logger_   = other.logger_;
-        severity_ = other.severity_;
+    LogMessage(LogMessage&& other) : logger_{other.logger_},
+                                     severity_{other.severity_} {
         stream_   = std::move(other.stream_);
-
-        other.logger_ = nullptr;
     }
     ~LogMessage();
 
@@ -39,9 +36,9 @@ public:
     LogMessage& operator<<(const T& t) { stream_ << t; return *this; }
 
 private:
-    ILogger*            logger_;
-    Severity            severity_{Severity::NONE};
-    std::ostringstream  stream_;
+    ILogger* const     logger_;
+    const Severity     severity_;
+    std::ostringstream stream_;
 };
 
 
@@ -116,7 +113,7 @@ public:
 
 
 
-extern std::shared_ptr<ILogger> the_logger;
+extern std::unique_ptr<ILogger> the_logger;
 
 #define LOG(LEVEL) \
     if(static_cast<int>(Severity::LEVEL) > static_cast<int>(the_logger->max_reporting_level())) ; \

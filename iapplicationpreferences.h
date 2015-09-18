@@ -2,7 +2,6 @@
 #define I_APPLICATION_PREFERENCES_H
 
 class QString;
-class QSettings;
 
 class IApplicationPreferences {
 public:
