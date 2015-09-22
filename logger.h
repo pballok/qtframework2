@@ -26,10 +26,8 @@ public:
             std::tm*    tm = std::localtime(&t);
             stream_ << std::put_time(tm, "%e-%b-%Y %H:%M:%S ") << EnumToString<Severity>::toString(sev) << " "; }
 
-    LogMessage(LogMessage&& other) : logger_{other.logger_},
-                                     severity_{other.severity_} {
-        stream_   = std::move(other.stream_);
-    }
+    LogMessage(const LogMessage&) = delete;
+    LogMessage(LogMessage&&)      = default;
     ~LogMessage();
 
     template <typename T>
