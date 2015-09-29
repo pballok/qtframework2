@@ -24,7 +24,7 @@ public:
         severity_{sev} {
             std::time_t t  = std::time(nullptr);
             std::tm*    tm = std::localtime(&t);
-            stream_ << std::put_time(tm, "%e-%b-%Y %H:%M:%S ") << EnumToString<Severity>::toString(sev) << " "; }
+            stream_ << std::put_time(tm, "%e-%b-%Y %H:%M:%S ") << SeverityString::toString(sev) << " "; }
 
     LogMessage(const LogMessage&) = delete;
     LogMessage(LogMessage&&)      = default;
