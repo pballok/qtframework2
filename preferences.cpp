@@ -25,14 +25,11 @@ void Preferences::save() const {
 }
 
 void Preferences::readLoggerPreferences(const QSettings& pref_file) {
-    console_level_ = EnumToString<Severity>::fromString(pref_file.value("LogLevels/Console").toString().toStdString());
-    if(console_level_ == Severity::UNDEFINED) console_level_ = Severity::DEBUG;
-
-    file_level_ = EnumToString<Severity>::fromString(pref_file.value("LogLevels/File").toString().toStdString());
-    if(file_level_ == Severity::UNDEFINED) file_level_ = Severity::DEBUG;
+    console_level_ = SeverityString::fromString(pref_file.value("LogLevels/Console").toString().toStdString(), Severity::DEBUG);
+    file_level_    = SeverityString::fromString(pref_file.value("LogLevels/File").toString().toStdString(), Severity::DEBUG);
 }
 
 void Preferences::writeLoggerPreferences(QSettings& pref_file) const {
-    pref_file.setValue("LogLevels/Console", EnumToString<Severity>::toString(console_level_).c_str());
-    pref_file.setValue("LogLevels/File", EnumToString<Severity>::toString(file_level_).c_str());
+    pref_file.setValue("LogLevels/Console", SeverityString::toString(console_level_).c_str());
+    pref_file.setValue("LogLevels/File", SeverityString::toString(file_level_).c_str());
 }

@@ -3,6 +3,8 @@
 
 #include "severity.h"
 
+class QSettings;
+
 class ILoggerPreferences {
 public:
     virtual ~ILoggerPreferences() { }

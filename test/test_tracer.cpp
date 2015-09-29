@@ -30,7 +30,7 @@ void testHelper1() {
 
 TEST(Tracer, Tracer) {
     std::remove("test1.log");
-    the_logger = std::make_shared<FileLogger>(std::make_unique<Logger>(), Severity::DEBUG, "test1.log");
+    the_logger = std::make_unique<FileLogger>(std::make_unique<Logger>(), Severity::DEBUG, "test1.log");
 
     testHelper1();
 

@@ -9,7 +9,7 @@ TEST(Logger, FileLogger) {
     std::remove("test1.log");
     std::remove("test2.log");
 
-    the_logger = std::make_shared<FileLogger>(std::make_unique<FileLogger>(std::make_unique<Logger>(), Severity::WARNING, "test1.log"), Severity::INFO, "test2.log");
+    the_logger = std::make_unique<FileLogger>(std::make_unique<FileLogger>(std::make_unique<Logger>(), Severity::WARNING, "test1.log"), Severity::INFO, "test2.log");
 
     LOG(ERROR) << "Test ERROR message " << 1;
     LOG(DEBUG) << "Test DEBUG message " << 2;

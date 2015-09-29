@@ -8,18 +8,20 @@
 template<typename E>
 class EnumToString {
 public:
-    static std::string toString(const E& enum_value) {
-        try {
-            return map_.at(enum_value);
-        } catch(const std::out_of_range&) {
-            return std::string("EnumToString::toString(): Unknown value");
-        }
-    }
+    static std::string toString(const E& enum_value) { return map_.at(enum_value); }
 
     static E fromString(const std::string& str_value) {
-        auto it = std::find_if(map_.begin(), map_.end(), [&str_value](std::pair<E, std::string> p)->bool {return p.second == str_value;});
-        if(it == map_.end()) return E::UNDEFINED;
+        auto it = std::find_if(map_.begin(), map_.end(), [&str_value](auto p)->bool {return p.second == str_value;});
+        if(it == map_.end()) throw std::runtime_error("Invalid enum string");
         return (*it).first;
+    }
+
+    static E fromString(const std::string& str_value, E default_value) noexcept {
+        try {
+            return fromString(str_value);
+        } catch(const std::runtime_error&) {
+            return default_value;
+        }
     }
 
 private:
