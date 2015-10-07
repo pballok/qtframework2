@@ -8,6 +8,10 @@
 #include <fstream>
 #include <ctime>
 #include <iomanip>
+#include <queue>
+#include <mutex>
+#include <thread>
+#include <condition_variable>
 
 #include "severity.h"
 
@@ -43,17 +47,21 @@ private:
 
 class ILogger {
 public:
-    explicit ILogger(Severity sev) : reporting_level_{sev}, max_reporting_level_{Severity::NONE} { }
+    explicit ILogger(Severity sev) : reporting_level_{sev}, max_reporting_level_{sev} { }
     virtual ~ILogger() { }
 
     LogMessage   log(Severity sev)           { return LogMessage(sev, this); }
     Severity     reporting_level() const     { return reporting_level_; }
     Severity     max_reporting_level() const { return max_reporting_level_; }
-    virtual void writeMessage(Severity sev, const std::string&) = 0;
+    virtual void sendMessage(Severity sev, const std::string&) = 0;
+    virtual void receiveMessage() = 0;
 
 protected:
-    Severity reporting_level_;
-    Severity max_reporting_level_;
+    Severity                reporting_level_;
+    Severity                max_reporting_level_;
+    std::queue<LogMessage>  message_queue_;
+    std::mutex              queue_mutex;
+    std::condition_variable message_arrived;
 };
 
 
@@ -61,7 +69,10 @@ protected:
 class Logger : public ILogger {
 public:
     explicit Logger(Severity sev = Severity::DEBUG) : ILogger(sev) { }
-    void writeMessage(Severity, const std::string&) override { }
+    void sendMessage(Severity, const std::string&) override { }
+    void receiveMessage() override {
+
+    }
 };
 
 
