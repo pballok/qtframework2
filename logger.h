@@ -23,13 +23,7 @@ class ILogger;
 
 class LogMessage final {
 public:
-    LogMessage(Severity sev, ILogger* const logger) :
-        logger_{logger},
-        severity_{sev} {
-            std::time_t t  = std::time(nullptr);
-            std::tm*    tm = std::localtime(&t);
-            stream_ << std::put_time(tm, "%e-%b-%Y %H:%M:%S ") << SeverityString::toString(sev) << " "; }
-
+    LogMessage(Severity sev, ILogger* const logger);
     LogMessage(const LogMessage&) = delete;
     LogMessage(LogMessage&&)      = default;
     ~LogMessage();
@@ -59,9 +53,6 @@ public:
 protected:
     Severity                reporting_level_;
     Severity                max_reporting_level_;
-    std::queue<LogMessage>  message_queue_;
-    std::mutex              queue_mutex;
-    std::condition_variable message_arrived;
 };
 
 
@@ -70,18 +61,21 @@ class Logger : public ILogger {
 public:
     explicit Logger(Severity sev = Severity::DEBUG) : ILogger(sev) { }
     void sendMessage(Severity, const std::string&) override { }
-    void receiveMessage() override {
-
-    }
+    void receiveMessage() override { }
 };
 
 
 
 class LoggerDecorator : public ILogger {
 public:
-    LoggerDecorator(std::unique_ptr<ILogger> b, Severity sev) : ILogger(sev) { base_ = std::move(b); max_reporting_level_ = std::max(sev, base_->max_reporting_level()); }
+    LoggerDecorator(std::unique_ptr<ILogger> b, Severity sev);
+    ~LoggerDecorator();
+
 protected:
     std::unique_ptr<ILogger> base_;
+    std::queue<LogMessage>   message_queue_;
+    std::mutex               queue_mutex_;
+    std::condition_variable  message_arrived_;
 };
 
 
@@ -98,9 +92,13 @@ public:
 
         }
 
-    void writeMessage(Severity sev, const std::string& message) override {
-        base_->writeMessage(sev, message);
+    void sendMessage(Severity sev, const std::string& message) override {
+        base_->sendMessage(sev, message);
         if(sev <= reporting_level_ && !file_stream_.fail()) file_stream_ << message << std::endl;
+    }
+
+    void receiveMessage() override {
+
     }
 
 protected:
@@ -114,9 +112,13 @@ public:
     ConsoleLogger(std::unique_ptr<ILogger> b, Severity sev)
         : LoggerDecorator(std::move(b), sev) { }
 
-    void writeMessage(Severity sev, const std::string& message) override {
-        base_->writeMessage(sev, message);
+    void sendMessage(Severity sev, const std::string& message) override {
+        base_->sendMessage(sev, message);
         if(sev <= reporting_level_) std::cerr << message << std::endl;
+    }
+
+    void receiveMessage() override {
+
     }
 };
 
