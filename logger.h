@@ -45,14 +45,14 @@ public:
     virtual ~ILogger() { }
 
     LogMessage   log(Severity sev)           { return LogMessage(sev, this); }
-    Severity     reporting_level() const     { return reporting_level_; }
     Severity     max_reporting_level() const { return max_reporting_level_; }
     virtual void sendMessage(Severity sev, const std::string&) = 0;
-    virtual void receiveMessage() = 0;
 
 protected:
     Severity                reporting_level_;
     Severity                max_reporting_level_;
+
+    virtual void receiveMessage() = 0;
 };
 
 
@@ -61,6 +61,8 @@ class Logger : public ILogger {
 public:
     explicit Logger(Severity sev = Severity::DEBUG) : ILogger(sev) { }
     void sendMessage(Severity, const std::string&) override { }
+
+protected:
     void receiveMessage() override { }
 };
 
@@ -72,10 +74,14 @@ public:
     ~LoggerDecorator();
 
 protected:
-    std::unique_ptr<ILogger> base_;
-    std::queue<LogMessage>   message_queue_;
-    std::mutex               queue_mutex_;
-    std::condition_variable  message_arrived_;
+    std::unique_ptr<ILogger>      base_;
+    std::thread  receiver_thread_;
+    std::queue<LogMessage>        message_queue_;
+    std::mutex                    queue_mutex_;
+    std::condition_variable       message_arrived_;
+
+    void receiveMessage() override;
+    virtual void outputMessage(const LogMessage& message) = 0;
 };
 
 
@@ -94,15 +100,12 @@ public:
 
     void sendMessage(Severity sev, const std::string& message) override {
         base_->sendMessage(sev, message);
-        if(sev <= reporting_level_ && !file_stream_.fail()) file_stream_ << message << std::endl;
-    }
-
-    void receiveMessage() override {
-
     }
 
 protected:
     std::ofstream file_stream_;
+
+    void outputMessage(const LogMessage& message) override;
 };
 
 
@@ -117,9 +120,8 @@ public:
         if(sev <= reporting_level_) std::cerr << message << std::endl;
     }
 
-    void receiveMessage() override {
-
-    }
+protected:
+    void outputMessage(const LogMessage& message) override;
 };
 
 
