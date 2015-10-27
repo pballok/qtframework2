@@ -1,18 +1,25 @@
+#include <chrono>
+
 #include "logger.h"
+
+
 
 std::unique_ptr<ILogger> the_logger{nullptr};
 
-LogMessage::LogMessage(Severity sev, ILogger* const logger) :
-    logger_{logger},
-    severity_{sev} {
-        std::time_t t  = std::time(nullptr);
-        std::tm*    tm = std::localtime(&t);
-        stream_ << std::put_time(tm, "%e-%b-%Y %H:%M:%S ") << SeverityString::toString(sev) << " ";
-}
+
 
 LogMessage::~LogMessage() {
-    logger_->sendMessage(severity_, stream_.str());
+    logger_->sendMessage(*this);
 }
+
+
+
+std::ostream& operator <<(std::ostream& os, const QueuedMessage& message) {
+    os << message.time_stamp_ << " " << SeverityString::toString(message.severity_) << " " << message.message_ << std::endl;
+    return os;
+}
+
+
 
 LoggerDecorator::LoggerDecorator(std::unique_ptr<ILogger> b, Severity sev) : ILogger(sev),
                                                                              base_{std::move(b)},
@@ -20,20 +27,58 @@ LoggerDecorator::LoggerDecorator(std::unique_ptr<ILogger> b, Severity sev) : ILo
     max_reporting_level_ = std::max(sev, base_->max_reporting_level());
 }
 
-LoggerDecorator::~LoggerDecorator() {
+
+
+void LoggerDecorator::endQueue() {
+    {
+        LogMessage end_message(Severity::NONE, this);
+        end_message << "END";
+    }
+
+    receiver_thread_.join();
 }
+
+
+
+void LoggerDecorator::sendMessage(const LogMessage& message) {
+    if(static_cast<int>(message.severity()) <= static_cast<int>(reporting_level_)) {
+        std::unique_lock<std::mutex> ml(queue_mutex_);
+        message_queue_.emplace(message);
+        ml.unlock();
+
+        message_arrived_.notify_one();
+    }
+
+    base_->sendMessage(message);
+}
+
+
 
 void LoggerDecorator::receiveMessage() {
     while(true) {
         std::unique_lock<std::mutex> ml(queue_mutex_);
-        message_arrived_.wait(ml);
+
+        message_arrived_.wait(ml, [this]{ return !message_queue_.empty(); });
+
+        QueuedMessage message = message_queue_.front();
+
+        message_queue_.pop();
+        ml.unlock();
+
+        if(message.severity() == Severity::NONE && message.message() == "END") break;
+
+        outputMessage(message);
     }
 }
 
-void FileLogger::outputMessage(const LogMessage &message) {
-    if(sev <= reporting_level_ && !file_stream_.fail()) file_stream_ << message << std::endl;
+
+
+void FileLogger::outputMessage(const QueuedMessage &message) {
+    if(!file_stream_.fail()) file_stream_ << message;
 }
 
-void ConsoleLogger::outputMessage(const LogMessage &message) {
 
+
+void ConsoleLogger::outputMessage(const QueuedMessage &message) {
+    std::cerr << message;
 }

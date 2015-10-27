@@ -34,6 +34,8 @@ TEST(Tracer, Tracer) {
 
     testHelper1();
 
+    the_logger.reset();
+
     std::ifstream     generated_log_1("test1.log");
     std::stringstream generated_stream_1;
     generated_stream_1 << generated_log_1.rdbuf();

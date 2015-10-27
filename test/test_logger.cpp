@@ -18,6 +18,8 @@ TEST(Logger, FileLogger) {
     LOG(INFO)  << "Test INFO message "  << 3;
     LOG(ERROR) << "Test ERROR message " << 4;
 
+    the_logger.reset();
+
     std::ifstream     generated_log_1("test1.log");
     std::stringstream generated_stream_1;
     generated_stream_1 << generated_log_1.rdbuf();
@@ -45,9 +47,9 @@ TEST(Logger, MultiThread) {
     std::remove("test1.log");
     std::remove("test2.log");
 
-    the_logger = std::make_unique<FileLogger>(std::make_unique<Logger>(), Severity::WARNING, "test1.log");
-
     constexpr int log_count = 100;
+
+    the_logger = std::make_unique<FileLogger>(std::make_unique<Logger>(), Severity::WARNING, "test1.log");
 
     std::thread t1{[](){ for(int i = 0; i < log_count; ++i) { LOG(ERROR) << "Message " << i << " from Thread 1"; }}};
     std::thread t2{[](){ for(int i = 0; i < log_count; ++i) { LOG(ERROR) << "Message " << i << " from Thread 2"; }}};
@@ -56,6 +58,8 @@ TEST(Logger, MultiThread) {
     t1.join();
     t2.join();
     t3.join();
+
+    the_logger.reset();
 
     std::ifstream              generated_log("test1.log");
     std::multiset<std::string> log_lines;

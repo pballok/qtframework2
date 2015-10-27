@@ -23,18 +23,45 @@ class ILogger;
 
 class LogMessage final {
 public:
-    LogMessage(Severity sev, ILogger* const logger);
-    LogMessage(const LogMessage&) = delete;
+    LogMessage(Severity sev, ILogger* const logger) : logger_{logger},
+                                                      time_stamp_{std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())},
+                                                      severity_{sev},
+                                                      message_{} { }
+    LogMessage(const LogMessage&) = default;
     LogMessage(LogMessage&&)      = default;
     ~LogMessage();
 
     template <typename T>
-    LogMessage& operator<<(const T& t) { stream_ << t; return *this; }
+    LogMessage& operator<<(const T& t) { std::ostringstream ss; ss << t; message_ += ss.str(); return *this; }
+
+    std::string timeStamp() const { std::ostringstream ss; ss << std::put_time(std::localtime(&time_stamp_), "%e-%b-%Y %H:%M:%S"); return ss.str(); }
+    Severity    severity()  const { return severity_; }
+    std::string message()   const { return message_; }
 
 private:
-    ILogger* const     logger_;
-    const Severity     severity_;
-    std::ostringstream stream_;
+    ILogger* const  logger_;
+    std::time_t     time_stamp_;
+    const Severity  severity_;
+    std::string     message_;
+};
+
+
+
+class QueuedMessage final {
+public:
+    QueuedMessage(const LogMessage& msg) : time_stamp_{msg.timeStamp()},
+                                           severity_{msg.severity()},
+                                           message_{msg.message()} { }
+
+    Severity    severity()  const { return severity_; }
+    std::string message()   const { return message_; }
+
+    friend std::ostream& operator <<(std::ostream&, const QueuedMessage& message);
+
+private:
+    std::string     time_stamp_;
+    const Severity  severity_;
+    std::string     message_;
 };
 
 
@@ -46,7 +73,7 @@ public:
 
     LogMessage   log(Severity sev)           { return LogMessage(sev, this); }
     Severity     max_reporting_level() const { return max_reporting_level_; }
-    virtual void sendMessage(Severity sev, const std::string&) = 0;
+    virtual void sendMessage(const LogMessage&) = 0;
 
 protected:
     Severity                reporting_level_;
@@ -60,7 +87,7 @@ protected:
 class Logger : public ILogger {
 public:
     explicit Logger(Severity sev = Severity::DEBUG) : ILogger(sev) { }
-    void sendMessage(Severity, const std::string&) override { }
+    void sendMessage(const LogMessage&) override { }
 
 protected:
     void receiveMessage() override { }
@@ -71,17 +98,18 @@ protected:
 class LoggerDecorator : public ILogger {
 public:
     LoggerDecorator(std::unique_ptr<ILogger> b, Severity sev);
-    ~LoggerDecorator();
 
 protected:
     std::unique_ptr<ILogger>      base_;
-    std::thread  receiver_thread_;
-    std::queue<LogMessage>        message_queue_;
+    std::thread                   receiver_thread_;
+    std::queue<QueuedMessage>     message_queue_;
     std::mutex                    queue_mutex_;
     std::condition_variable       message_arrived_;
 
-    void receiveMessage() override;
-    virtual void outputMessage(const LogMessage& message) = 0;
+    void         sendMessage(const LogMessage& message) override;
+    void         receiveMessage() override;
+    virtual void outputMessage(const QueuedMessage& message) = 0;
+    void         endQueue();
 };
 
 
@@ -98,14 +126,12 @@ public:
 
         }
 
-    void sendMessage(Severity sev, const std::string& message) override {
-        base_->sendMessage(sev, message);
-    }
+    ~FileLogger() { endQueue(); }
 
 protected:
     std::ofstream file_stream_;
 
-    void outputMessage(const LogMessage& message) override;
+    void outputMessage(const QueuedMessage& message) override;
 };
 
 
@@ -115,13 +141,10 @@ public:
     ConsoleLogger(std::unique_ptr<ILogger> b, Severity sev)
         : LoggerDecorator(std::move(b), sev) { }
 
-    void sendMessage(Severity sev, const std::string& message) override {
-        base_->sendMessage(sev, message);
-        if(sev <= reporting_level_) std::cerr << message << std::endl;
-    }
+    ~ConsoleLogger() { endQueue(); }
 
 protected:
-    void outputMessage(const LogMessage& message) override;
+    void outputMessage(const QueuedMessage& message) override;
 };
 
 
