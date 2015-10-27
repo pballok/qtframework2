@@ -8,6 +8,10 @@
 #include <fstream>
 #include <ctime>
 #include <iomanip>
+#include <queue>
+#include <mutex>
+#include <thread>
+#include <condition_variable>
 
 #include "severity.h"
 
@@ -19,41 +23,63 @@ class ILogger;
 
 class LogMessage final {
 public:
-    LogMessage(Severity sev, ILogger* const logger) :
-        logger_{logger},
-        severity_{sev} {
-            std::time_t t  = std::time(nullptr);
-            std::tm*    tm = std::localtime(&t);
-            stream_ << std::put_time(tm, "%e-%b-%Y %H:%M:%S ") << SeverityString::toString(sev) << " "; }
-
-    LogMessage(const LogMessage&) = delete;
+    LogMessage(Severity sev, ILogger* const logger) : logger_{logger},
+                                                      time_stamp_{std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())},
+                                                      severity_{sev},
+                                                      message_{} { }
+    LogMessage(const LogMessage&) = default;
     LogMessage(LogMessage&&)      = default;
     ~LogMessage();
 
     template <typename T>
-    LogMessage& operator<<(const T& t) { stream_ << t; return *this; }
+    LogMessage& operator<<(const T& t) { std::ostringstream ss; ss << t; message_ += ss.str(); return *this; }
+
+    std::string timeStamp() const { std::ostringstream ss; ss << std::put_time(std::localtime(&time_stamp_), "%e-%b-%Y %H:%M:%S"); return ss.str(); }
+    Severity    severity()  const { return severity_; }
+    std::string message()   const { return message_; }
 
 private:
-    ILogger* const     logger_;
-    const Severity     severity_;
-    std::ostringstream stream_;
+    ILogger* const  logger_;
+    std::time_t     time_stamp_;
+    const Severity  severity_;
+    std::string     message_;
+};
+
+
+
+class QueuedMessage final {
+public:
+    QueuedMessage(const LogMessage& msg) : time_stamp_{msg.timeStamp()},
+                                           severity_{msg.severity()},
+                                           message_{msg.message()} { }
+
+    Severity    severity()  const { return severity_; }
+    std::string message()   const { return message_; }
+
+    friend std::ostream& operator <<(std::ostream&, const QueuedMessage& message);
+
+private:
+    std::string     time_stamp_;
+    const Severity  severity_;
+    std::string     message_;
 };
 
 
 
 class ILogger {
 public:
-    explicit ILogger(Severity sev) : reporting_level_{sev}, max_reporting_level_{Severity::NONE} { }
+    explicit ILogger(Severity sev) : reporting_level_{sev}, max_reporting_level_{sev} { }
     virtual ~ILogger() { }
 
     LogMessage   log(Severity sev)           { return LogMessage(sev, this); }
-    Severity     reporting_level() const     { return reporting_level_; }
     Severity     max_reporting_level() const { return max_reporting_level_; }
-    virtual void writeMessage(Severity sev, const std::string&) = 0;
+    virtual void sendMessage(const LogMessage&) = 0;
 
 protected:
-    Severity reporting_level_;
-    Severity max_reporting_level_;
+    Severity                reporting_level_;
+    Severity                max_reporting_level_;
+
+    virtual void receiveMessage() = 0;
 };
 
 
@@ -61,16 +87,29 @@ protected:
 class Logger : public ILogger {
 public:
     explicit Logger(Severity sev = Severity::DEBUG) : ILogger(sev) { }
-    void writeMessage(Severity, const std::string&) override { }
+    void sendMessage(const LogMessage&) override { }
+
+protected:
+    void receiveMessage() override { }
 };
 
 
 
 class LoggerDecorator : public ILogger {
 public:
-    LoggerDecorator(std::unique_ptr<ILogger> b, Severity sev) : ILogger(sev) { base_ = std::move(b); max_reporting_level_ = std::max(sev, base_->max_reporting_level()); }
+    LoggerDecorator(std::unique_ptr<ILogger> b, Severity sev);
+
 protected:
-    std::unique_ptr<ILogger> base_;
+    std::unique_ptr<ILogger>      base_;
+    std::thread                   receiver_thread_;
+    std::queue<QueuedMessage>     message_queue_;
+    std::mutex                    queue_mutex_;
+    std::condition_variable       message_arrived_;
+
+    void         sendMessage(const LogMessage& message) override;
+    void         receiveMessage() override;
+    virtual void outputMessage(const QueuedMessage& message) = 0;
+    void         endQueue();
 };
 
 
@@ -87,13 +126,12 @@ public:
 
         }
 
-    void writeMessage(Severity sev, const std::string& message) override {
-        base_->writeMessage(sev, message);
-        if(sev <= reporting_level_ && !file_stream_.fail()) file_stream_ << message << std::endl;
-    }
+    ~FileLogger() { endQueue(); }
 
 protected:
     std::ofstream file_stream_;
+
+    void outputMessage(const QueuedMessage& message) override;
 };
 
 
@@ -103,10 +141,10 @@ public:
     ConsoleLogger(std::unique_ptr<ILogger> b, Severity sev)
         : LoggerDecorator(std::move(b), sev) { }
 
-    void writeMessage(Severity sev, const std::string& message) override {
-        base_->writeMessage(sev, message);
-        if(sev <= reporting_level_) std::cerr << message << std::endl;
-    }
+    ~ConsoleLogger() { endQueue(); }
+
+protected:
+    void outputMessage(const QueuedMessage& message) override;
 };
 
 

@@ -34,14 +34,16 @@ TEST(Tracer, Tracer) {
 
     testHelper1();
 
+    the_logger.reset();
+
     std::ifstream     generated_log_1("test1.log");
     std::stringstream generated_stream_1;
     generated_stream_1 << generated_log_1.rdbuf();
     std::string       log_contents_1 = generated_stream_1.str();
 
-    EXPECT_NE(log_contents_1.find("DEB void testHelper1() >"), std::string::npos);
-    EXPECT_NE(log_contents_1.find("DEB   int testHelper2(int, int) > 42, 38"), std::string::npos);
-    EXPECT_NE(log_contents_1.find("DEB     void testHelper3() > Helper 3 started"), std::string::npos);
-    EXPECT_NE(log_contents_1.find("DEB   int testHelper2(int, int) < 80"), std::string::npos);
-    EXPECT_NE(log_contents_1.find("DEB void testHelper1() <"), std::string::npos);
+    EXPECT_NE(std::string::npos, log_contents_1.find("DEB void testHelper1() >"));
+    EXPECT_NE(std::string::npos, log_contents_1.find("DEB   int testHelper2(int, int) > 42, 38"));
+    EXPECT_NE(std::string::npos, log_contents_1.find("DEB     void testHelper3() > Helper 3 started"));
+    EXPECT_NE(std::string::npos, log_contents_1.find("DEB   int testHelper2(int, int) < 80"));
+    EXPECT_NE(std::string::npos, log_contents_1.find("DEB void testHelper1() <"));
 }
