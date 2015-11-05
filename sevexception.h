@@ -10,27 +10,22 @@
 class SevException : public std::exception {
 public:
   SevException(const Severity severity, const std::string& message)
-    : severity_(severity), message_(message) {}
+    : severity_(severity), message_(message) { }
 
   SevException(const Severity severity, const QString& message)
-    : severity_(severity), message_(message.toStdString()) {}
+    : severity_(severity), message_(message.toStdString()) { }
 
-  virtual ~SevException() throw() {}
-
-  Severity severity() const throw() {
+  Severity severity() const noexcept {
     return severity_;
   }
 
-  virtual const char* what() const throw() {
+  const char* what() const noexcept override {
     return message_.c_str();
   }
 
 private:
     Severity     severity_;
     std::string  message_;
-
-    SevException();
-    void operator=(const SevException&);
 };
 
 #endif
