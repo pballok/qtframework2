@@ -28,8 +28,8 @@ public:
     static void addResult() { }
 
 private:
-    static int         indent_;
-    static const int   indent_step_;
+    static thread_local int  indent_;
+    static constexpr int     indent_step_{2};
 
     const char*        function_name_;
     bool               logged_message_;

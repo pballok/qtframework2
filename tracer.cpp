@@ -1,7 +1,6 @@
 #include "tracer.h"
 
-const int Tracer::indent_step_ = 2;
-int Tracer::indent_ = -Tracer::indent_step_;
+thread_local int Tracer::indent_ = -Tracer::indent_step_;
 
 Tracer::Tracer(const char* func_name) : function_name_{func_name},
                                         logged_message_{false} { }
