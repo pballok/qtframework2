@@ -27,9 +27,12 @@ public:
                                                       time_stamp_{std::chrono::system_clock::to_time_t(std::chrono::system_clock::now())},
                                                       severity_{sev},
                                                       message_{} { }
-    LogMessage(const LogMessage&) = default;
-    LogMessage(LogMessage&&)      = default;
+    LogMessage(LogMessage&&) = default;
+    LogMessage(const LogMessage&) = delete;
     ~LogMessage();
+
+    LogMessage& operator=(const LogMessage&) = delete;
+    LogMessage& operator=(LogMessage&&) = delete;
 
     template <typename T>
     LogMessage& operator<<(const T& t) { std::ostringstream ss; ss << t; message_ += ss.str(); return *this; }
@@ -49,9 +52,9 @@ private:
 
 class QueuedMessage final {
 public:
-    QueuedMessage(const LogMessage& msg) : time_stamp_{msg.timeStamp()},
-                                           severity_{msg.severity()},
-                                           message_{msg.message()} { }
+    explicit QueuedMessage(const LogMessage& msg) : time_stamp_{msg.timeStamp()},
+                                                    severity_{msg.severity()},
+                                                    message_{msg.message()} { }
 
     Severity    severity()  const { return severity_; }
     std::string message()   const { return message_; }
